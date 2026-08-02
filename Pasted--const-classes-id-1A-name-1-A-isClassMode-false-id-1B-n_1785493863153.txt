@@ -1,0 +1,852 @@
+// クラス一覧
+const classes = [
+  { id: '1A', name: '1年A組', isClassMode: false },
+  { id: '1B', name: '1年B組', isClassMode: false }
+];
+
+let selectedClassId = '1A'; // 教員画面で現在選択中のクラス
+
+// 向き管理 (front -> side -> back)
+let currentDirIndex = 0;
+const directions = ['front', 'side', 'back'];
+
+// 単元マスターデータ
+let stages = [
+  {
+    id: 'stage_1',
+    title: '少年の日の思い出',
+    skill: '情景の想像',
+    missions: [
+      '① 本文の音読を完了する',
+      '② エーミールの性格をまとめる',
+      '③ クジャクヤママユの場面の考察'
+    ],
+    dialogues: [
+      { speaker: '私', text: '「そうか、君も蝶の標本を見たいのだね。私の書斎へようこそ…」' },
+      { speaker: '客', text: '「ええ、あなたの集めた見事なコレクションを見せてください。」' },
+      { speaker: '私', text: '「では見せよう。…だが、これを見るたびに私は、少年の頃のある苦い思い出を思い出すのだよ。」' }
+    ]
+  },
+  {
+    id: 'stage_2',
+    title: '走れメロス',
+    skill: '信念の走走',
+    missions: [
+      '① メロスと王の対話の読み取り',
+      '② セリヌンティウスとの絆の考察',
+      '③ 走る場面の表現工夫のまとめ'
+    ],
+    dialogues: [
+      { speaker: 'メロス', text: '「黒い風のように走れ！ 私の命など問題ではない。私は信頼に報いねばならぬ。」' },
+      { speaker: '語り', text: '陽は西に傾き、メロスの足は限界に近づいていた…' }
+    ]
+  }
+];
+
+// クラスごとの単元ミッション解放状態データ構造
+// classMissionSettings[classId][stageId] = [true, false, false]
+let classMissionSettings = {
+  '1A': {
+    'stage_1': [true, true, false],
+    'stage_2': [false, false, false]
+  },
+  '1B': {
+    'stage_1': [true, false, false],
+    'stage_2': [false, false, false]
+  }
+};
+
+// ガチャアイテム一覧
+let normalGachaPool = [
+  { id: 'g1', name: '木の剣', weight: 60, images: { front: 'sword_front.png', side: 'sword_side.png', back: 'sword_back.png' } },
+  { id: 'g2', name: '丸めがね', weight: 30, images: { front: '', side: '', back: '' } },
+  { id: 'g3', name: '国語の辞書', weight: 10, images: { front: '', side: '', back: '' } }
+];
+let limitedGachaPool = [
+  { id: 'g4', name: '見習いの服', weight: 60, images: { front: '', side: '', back: '' } },
+  { id: 'g5', name: '伝説の羽ペン', weight: 30, images: { front: '', side: '', back: '' } },
+  { id: 'g6', name: '黄金の万年筆', weight: 10, images: { front: '', side: '', back: '' } }
+];
+
+// 生徒データ
+let students = [
+  {
+    id: 'student01',
+    name: '山田 太郎',
+    classId: '1A',
+    pass: '1234',
+    avatar: 'boy.png',
+    currentPt: 30,
+    totalPt: 50,
+    todayPt: 0,
+    checkedInToday: false,
+    skills: [],
+    items: ['木の剣'],
+    equipped: '木の剣',
+    progress: { stage_1: 1, stage_2: 0 }
+  },
+  {
+    id: 'student02',
+    name: '佐藤 花子',
+    classId: '1A',
+    pass: '1234',
+    avatar: 'girl.png',
+    currentPt: 25,
+    totalPt: 80,
+    todayPt: 10,
+    checkedInToday: false,
+    skills: ['情景の想像'],
+    items: [],
+    equipped: 'なし',
+    progress: { stage_1: 2, stage_2: 0 }
+  },
+  {
+    id: 'student03',
+    name: '鈴木 一郎',
+    classId: '1B',
+    pass: '1234',
+    avatar: 'boy.png',
+    currentPt: 10,
+    totalPt: 20,
+    todayPt: 0,
+    checkedInToday: false,
+    skills: [],
+    items: [],
+    equipped: 'なし',
+    progress: { stage_1: 0, stage_2: 0 }
+  }
+];
+
+let currentUser = null;
+let currentStage = null;
+let currentDialogueIndex = 0;
+let modalConfigStageId = null;
+
+// 初期化
+window.onload = function() {
+  initClassSelect();
+};
+
+function initClassSelect() {
+  const select = document.getElementById('teacher-class-select');
+  select.innerHTML = '';
+  classes.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.innerText = c.name;
+    select.appendChild(opt);
+  });
+  select.value = selectedClassId;
+  updateClassDisplays();
+}
+
+function updateClassDisplays() {
+  const c = classes.find(cl => cl.id === selectedClassId);
+  const name = c ? c.name : '';
+  ['current-class-display-1', 'current-class-display-2', 'current-class-display-3'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = name;
+  });
+
+  if (c) {
+    document.getElementById('mode-text').innerText = c.isClassMode ? '授業中 (ON)' : '授業外 (OFF)';
+    document.getElementById('mode-text').className = c.isClassMode ? 'text-on' : 'text-off';
+    document.getElementById('mode-btn').innerText = c.isClassMode ? '授業を終了する (OFFにする)' : '授業を開始する (ONにする)';
+  }
+}
+
+function onSelectClassChanged() {
+  selectedClassId = document.getElementById('teacher-class-select').value;
+  updateClassDisplays();
+  renderTeacherDashboard();
+}
+
+// ログイン
+function login() {
+  const userId = document.getElementById('user-id').value;
+  const userPass = document.getElementById('user-pass').value;
+
+  if (userId === 'teacher' && userPass === '1234') {
+    currentUser = { id: 'teacher', role: 'teacher' };
+    showScreen('teacher-screen');
+    renderTeacherDashboard();
+    return;
+  }
+
+  const student = students.find(s => s.id === userId && s.pass === userPass);
+  if (student) {
+    currentUser = student;
+    if (!student.avatar) {
+      document.getElementById('avatar-select-modal').classList.remove('hidden');
+      return;
+    }
+    startStudentSession();
+    return;
+  }
+  alert('IDまたはパスワードが違います');
+}
+
+function selectAvatar(avatarPath) {
+  currentUser.avatar = avatarPath;
+  document.getElementById('avatar-select-modal').classList.add('hidden');
+  startStudentSession();
+}
+
+function startStudentSession() {
+  let gotBonus = false;
+  const studentClass = classes.find(c => c.id === currentUser.classId);
+  if (studentClass && studentClass.isClassMode && !currentUser.checkedInToday) {
+    currentUser.currentPt += 1;
+    currentUser.totalPt += 1;
+    currentUser.todayPt += 1;
+    currentUser.checkedInToday = true;
+    gotBonus = true;
+  }
+  showScreen('student-screen');
+  renderStudentDashboard(gotBonus);
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-pass').value = '';
+  showScreen('login-screen');
+}
+
+function showScreen(screenId) {
+  ['login-screen', 'teacher-screen', 'student-screen', 'adventure-screen'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(screenId).classList.remove('hidden');
+}
+
+// 教員タブ切替
+function switchTeacherTab(tabName) {
+  ['students', 'missions', 'gacha'].forEach(t => {
+    document.getElementById(`teacher-tab-${t}`).classList.add('hidden');
+    document.getElementById(`tab-btn-${t}`).classList.remove('active');
+  });
+  document.getElementById(`teacher-tab-${tabName}`).classList.remove('hidden');
+  document.getElementById(`tab-btn-${tabName}`).classList.add('active');
+}
+
+// タップで向き切り替え (front -> side -> back)
+function rotateAvatar() {
+  currentDirIndex = (currentDirIndex + 1) % directions.length;
+  if (currentUser) {
+    renderStudentDashboard(false);
+  }
+}
+
+// アバターと装備品画像の重ね合わせHTMLの作成
+function renderAvatarWithEquipment(avatarBaseName, equippedItemName) {
+  if (!avatarBaseName) {
+    return `<div style="color:#aaa; font-size:0.8em;">未設定</div>`;
+  }
+
+  const dir = directions[currentDirIndex];
+  const baseName = avatarBaseName.replace(/\.[^/.]+$/, "");
+  const ext = avatarBaseName.split('.').pop();
+  const avatarSrc = `${baseName}_${dir}.${ext}`;
+
+  let equipImgHTML = '';
+  if (equippedItemName && equippedItemName !== 'なし') {
+    const allItems = [...normalGachaPool, ...limitedGachaPool];
+    const item = allItems.find(i => i.name === equippedItemName);
+    
+    if (item && item.images && item.images[dir]) {
+      equipImgHTML = `<img src="${item.images[dir]}" class="sprite-img" style="z-index:2;" onerror="this.style.display='none'">`;
+    }
+  }
+
+  return `
+    <img src="${avatarSrc}" class="sprite-img" style="z-index:1;" onerror="this.src='${avatarBaseName}'">
+    ${equipImgHTML}
+  `;
+}
+
+// 教員画面描画
+function renderTeacherDashboard() {
+  renderStudentGrid();
+  renderClassStageList();
+  renderGachaManageList();
+}
+
+// 【タブ1】生徒一覧＆個別の達成状態操作
+function renderStudentGrid() {
+  const grid = document.getElementById('student-grid');
+  grid.innerHTML = '';
+
+  const classStudents = students.filter(s => s.classId === selectedClassId);
+
+  if (classStudents.length === 0) {
+    grid.innerHTML = '<p class="hint">このクラスに所属する生徒はいません。</p>';
+    return;
+  }
+
+  classStudents.forEach(st => {
+    const card = document.createElement('div');
+    card.className = `student-card ${st.todayPt === 0 ? 'low-pt' : ''}`;
+
+    const avatarHTML = renderAvatarWithEquipment(st.avatar, st.equipped);
+
+    let missionControlsHTML = '';
+    stages.forEach(stg => {
+      if (!st.progress) st.progress = {};
+
+      const prog = st.progress[stg.id] || 0;
+      const total = stg.missions.length;
+
+      missionControlsHTML += `
+        <div class="student-mission-box">
+          <b>${stg.title}</b><br>
+          達成数: <b>${prog}/${total}</b>
+          <div style="margin-top:5px; display:flex; gap:4px; flex-wrap:wrap;">
+            <button onclick="changeStudentProgress('${st.id}', '${stg.id}', 1)" ${prog >= total ? 'disabled' : ''} style="font-size:0.75em; padding:3px 6px; background:#38a169;">✅ 1つ達成</button>
+            <button onclick="changeStudentProgress('${st.id}', '${stg.id}', -1)" ${prog <= 0 ? 'disabled' : ''} class="btn-secondary" style="font-size:0.7em; padding:3px 6px;">-1</button>
+          </div>
+        </div>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="sprite-box">${avatarHTML}</div>
+      <h4>${st.name}</h4>
+      <p>本日獲得: <b>+${st.todayPt} pt</b></p>
+      <p><small>所持: ${st.currentPt}pt / 累計: ${st.totalPt}pt</small></p>
+
+      <div class="pt-buttons">
+        <button onclick="addPoint('${st.id}', 1)">+1pt</button>
+        <button onclick="addPoint('${st.id}', 5)">+5pt</button>
+        <button onclick="addPoint('${st.id}', 10)">+10pt</button>
+      </div>
+      <div class="custom-pt-box">
+        <input type="number" id="custom-pt-${st.id}" placeholder="pt">
+        <button onclick="addCustomPoint('${st.id}')">加算</button>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #5a5a7a; margin:10px 0;">
+      <h5>🎯 単元ミッション達成コントロール</h5>
+      ${missionControlsHTML}
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function changeStudentProgress(studentId, stageId, delta) {
+  const st = students.find(s => s.id === studentId);
+  const stg = stages.find(s => s.id === stageId);
+  if (!st || !stg) return;
+
+  if (!st.progress[stageId]) st.progress[stageId] = 0;
+  st.progress[stageId] += delta;
+
+  if (st.progress[stageId] < 0) st.progress[stageId] = 0;
+  if (st.progress[stageId] > stg.missions.length) st.progress[stageId] = stg.missions.length;
+
+  if (st.progress[stageId] === stg.missions.length && !st.skills.includes(stg.skill)) {
+    st.skills.push(stg.skill);
+  }
+
+  renderStudentGrid();
+}
+
+function addPoint(studentId, pt) {
+  const st = students.find(s => s.id === studentId);
+  if (st) {
+    st.currentPt += pt;
+    st.totalPt += pt;
+    st.todayPt += pt;
+    renderStudentGrid();
+  }
+}
+
+function addCustomPoint(studentId) {
+  const input = document.getElementById(`custom-pt-${studentId}`);
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    addPoint(studentId, val);
+    input.value = '';
+  }
+}
+
+// 【タブ2】クラスごとの単元ミッション解放一覧の描画
+function renderClassStageList() {
+  const list = document.getElementById('class-stage-list');
+  list.innerHTML = '';
+
+  if (stages.length === 0) {
+    list.innerHTML = '<p class="hint">登録されている単元はありません。</p>';
+    return;
+  }
+
+  if (!classMissionSettings[selectedClassId]) {
+    classMissionSettings[selectedClassId] = {};
+  }
+
+  stages.forEach(stg => {
+    // 未設定の場合は初期化
+    if (!classMissionSettings[selectedClassId][stg.id]) {
+      classMissionSettings[selectedClassId][stg.id] = new Array(stg.missions.length).fill(false);
+    }
+
+    const settings = classMissionSettings[selectedClassId][stg.id];
+    const unlockedCount = settings.filter(Boolean).length;
+
+    const div = document.createElement('div');
+    div.className = 'teacher-stage-item';
+    div.innerHTML = `
+      <div>
+        <strong>📖 ${stg.title}</strong> (スキル: ${stg.skill})
+        <br><small style="color:#ecc94b;">現在の解放状況: 全${stg.missions.length}個中 <b>${unlockedCount}個解放中</b> (他は『???』表示)</small>
+      </div>
+      <div>
+        <button onclick="openMissionModal('${stg.id}')" class="btn-primary">🔓 ミッション解放設定</button>
+        <button onclick="editStage('${stg.id}')" class="btn-secondary" style="margin-left:5px;">編集</button>
+        <button onclick="deleteStage('${stg.id}')" class="btn-danger" style="margin-left:5px;">削除</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ミッション解放設定モーダルの操作
+function openMissionModal(stageId) {
+  modalConfigStageId = stageId;
+  const stg = stages.find(s => s.id === stageId);
+  const cls = classes.find(c => c.id === selectedClassId);
+
+  document.getElementById('modal-stage-title').innerText = `📖 ${stg.title} - ミッション解放設定`;
+  document.getElementById('modal-class-name').innerText = cls ? cls.name : '';
+
+  renderModalMissionList();
+  document.getElementById('mission-config-modal').classList.remove('hidden');
+}
+
+function renderModalMissionList() {
+  const container = document.getElementById('modal-mission-list');
+  container.innerHTML = '';
+
+  const stg = stages.find(s => s.id === modalConfigStageId);
+  const settings = classMissionSettings[selectedClassId][modalConfigStageId];
+
+  stg.missions.forEach((mText, idx) => {
+    const isUnlocked = settings[idx] || false;
+    const div = document.createElement('div');
+    div.className = `mission-toggle-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+    div.innerHTML = `
+      <div>
+        <b>ミッション ${idx + 1}:</b> ${mText}
+        <br><small style="color:${isUnlocked ? '#48bb78' : '#e53e3e'};">${isUnlocked ? '🔓 生徒画面に解放中' : '🔒 生徒画面では「???」と表示'}</small>
+      </div>
+      <button onclick="toggleSingleMission(${idx})" class="${isUnlocked ? 'btn-danger' : 'btn-success'}" style="font-size:0.8em;">
+        ${isUnlocked ? '「???」にする' : '解放する'}
+      </button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleSingleMission(index) {
+  const settings = classMissionSettings[selectedClassId][modalConfigStageId];
+  settings[index] = !settings[index];
+  renderModalMissionList();
+  renderClassStageList();
+}
+
+function toggleAllMissions(status) {
+  const stg = stages.find(s => s.id === modalConfigStageId);
+  classMissionSettings[selectedClassId][modalConfigStageId] = new Array(stg.missions.length).fill(status);
+  renderModalMissionList();
+  renderClassStageList();
+}
+
+function closeMissionModal() {
+  document.getElementById('mission-config-modal').classList.add('hidden');
+  modalConfigStageId = null;
+}
+
+// 単元追加・編集
+function parseDialogueLines(text) {
+  return text.split('\n').map(line => {
+    const parts = line.split(/[:：]/);
+    if (parts.length >= 2) {
+      return { speaker: parts[0].trim(), text: parts.slice(1).join(':').trim() };
+    } else {
+      return { speaker: '語り', text: line.trim() };
+    }
+  });
+}
+
+function saveStage() {
+  const editId = document.getElementById('editing-stage-id').value;
+  const title = document.getElementById('stage-title').value.trim();
+  const missionsText = document.getElementById('stage-missions').value.trim();
+  const dialogueText = document.getElementById('stage-dialogue').value.trim();
+  const skill = document.getElementById('stage-skill').value.trim();
+
+  if (!title || !dialogueText || !skill) {
+    alert('タイトル・会話・スキルを入力してください');
+    return;
+  }
+
+  const missions = missionsText ? missionsText.split('\n').map(m => m.trim()).filter(m => m.length > 0) : ['① 学習を完了する'];
+  const parsedDialogues = parseDialogueLines(dialogueText);
+
+  if (editId) {
+    const stg = stages.find(s => s.id === editId);
+    if (stg) {
+      stg.title = title;
+      stg.missions = missions;
+      stg.dialogues = parsedDialogues;
+      stg.skill = skill;
+      alert(`単元「${title}」を更新しました！`);
+    }
+  } else {
+    const newId = 'stage_' + Date.now();
+    stages.push({
+      id: newId,
+      title: title,
+      missions: missions,
+      dialogues: parsedDialogues,
+      skill: skill
+    });
+
+    // 全クラスの初期設定を作成
+    classes.forEach(c => {
+      if (!classMissionSettings[c.id]) classMissionSettings[c.id] = {};
+      classMissionSettings[c.id][newId] = new Array(missions.length).fill(false);
+    });
+
+    alert(`新しい単元「${title}」を登録しました！`);
+  }
+
+  resetStageForm();
+  renderTeacherDashboard();
+}
+
+function editStage(stageId) {
+  const stg = stages.find(s => s.id === stageId);
+  if (!stg) return;
+
+  switchTeacherTab('missions');
+  document.getElementById('stage-form-title').innerText = '✏️ 単元・ミッションの編集';
+  document.getElementById('editing-stage-id').value = stg.id;
+  document.getElementById('stage-title').value = stg.title;
+  document.getElementById('stage-missions').value = stg.missions.join('\n');
+  document.getElementById('stage-dialogue').value = stg.dialogues.map(d => `${d.speaker}：${d.text}`).join('\n');
+  document.getElementById('stage-skill').value = stg.skill;
+
+  document.getElementById('save-stage-btn').innerText = '更新内容を保存する';
+  document.getElementById('cancel-edit-btn').classList.remove('hidden');
+}
+
+function resetStageForm() {
+  document.getElementById('stage-form-title').innerText = '➕ 全クラス共通単元の追加・編集';
+  document.getElementById('editing-stage-id').value = '';
+  document.getElementById('stage-title').value = '';
+  document.getElementById('stage-missions').value = '';
+  document.getElementById('stage-dialogue').value = '';
+  document.getElementById('stage-skill').value = '';
+
+  document.getElementById('save-stage-btn').innerText = '単元を登録・更新する';
+  document.getElementById('cancel-edit-btn').classList.add('hidden');
+}
+
+function deleteStage(stageId) {
+  if (confirm('本当にこの単元を削除しますか？')) {
+    stages = stages.filter(s => s.id !== stageId);
+    classes.forEach(c => {
+      if (classMissionSettings[c.id]) delete classMissionSettings[c.id][stageId];
+    });
+    renderTeacherDashboard();
+  }
+}
+
+// ガチャ管理
+function addGachaItem() {
+  const type = document.getElementById('gacha-item-type').value;
+  const name = document.getElementById('gacha-item-name').value.trim();
+  const weight = parseInt(document.getElementById('gacha-item-weight').value);
+  
+  const imgFront = document.getElementById('gacha-item-img-front').value.trim();
+  const imgSide = document.getElementById('gacha-item-img-side').value.trim();
+  const imgBack = document.getElementById('gacha-item-img-back').value.trim();
+
+  if (!name || isNaN(weight) || weight <= 0) {
+    alert('正しいアイテム名と確率の重み（正の数値）を入力してください');
+    return;
+  }
+
+  const newItem = { 
+    id: 'item_' + Date.now(), 
+    name, 
+    weight, 
+    images: { front: imgFront, side: imgSide, back: imgBack }
+  };
+
+  if (type === 'normal') normalGachaPool.push(newItem);
+  else limitedGachaPool.push(newItem);
+
+  alert(`ガチャアイテム「${name}」を追加しました！`);
+  document.getElementById('gacha-item-name').value = '';
+  document.getElementById('gacha-item-weight').value = '';
+  document.getElementById('gacha-item-img-front').value = '';
+  document.getElementById('gacha-item-img-side').value = '';
+  document.getElementById('gacha-item-img-back').value = '';
+
+  renderGachaManageList();
+}
+
+function deleteGachaItem(type, itemId) {
+  if (confirm('このガチャアイテムを削除しますか？')) {
+    if (type === 'normal') normalGachaPool = normalGachaPool.filter(i => i.id !== itemId);
+    else limitedGachaPool = limitedGachaPool.filter(i => i.id !== itemId);
+    renderGachaManageList();
+  }
+}
+
+function renderGachaManageList() {
+  const list = document.getElementById('gacha-item-list');
+  list.innerHTML = '';
+
+  const renderPool = (title, pool, type) => {
+    let html = `<h5>${title}</h5>`;
+    if (pool.length === 0) html += `<p class="hint">アイテムが設定されていません</p>`;
+    pool.forEach(item => {
+      const hasImg = item.images && (item.images.front || item.images.side || item.images.back);
+      html += `
+        <div class="gacha-manage-item">
+          <div>
+            <b>${item.name}</b> (重み: ${item.weight})
+            ${hasImg ? `<br><small style="color:#ecc94b;">🖼️ 画像: [正面]${item.images.front || 'なし'} / [横]${item.images.side || 'なし'} / [背面]${item.images.back || 'なし'}</small>` : ''}
+          </div>
+          <button onclick="deleteGachaItem('${type}', '${item.id}')" class="btn-danger" style="font-size:0.75em;">削除</button>
+        </div>
+      `;
+    });
+    return html;
+  };
+
+  list.innerHTML = renderPool('通常ガチャプール', normalGachaPool, 'normal') + renderPool('期間限定ガチャプール', limitedGachaPool, 'limited');
+}
+
+function toggleClassMode() {
+  const c = classes.find(cl => cl.id === selectedClassId);
+  if (c) {
+    c.isClassMode = !c.isClassMode;
+    updateClassDisplays();
+  }
+}
+
+function sortStudentsByToday() {
+  students.sort((a, b) => a.todayPt - b.todayPt);
+  renderTeacherDashboard();
+}
+
+// 生徒画面描画
+function renderStudentDashboard(gotBonus) {
+  const studentClass = classes.find(c => c.id === currentUser.classId);
+  const className = studentClass ? studentClass.name : '';
+
+  document.getElementById('st-name').innerText = currentUser.name;
+  document.getElementById('st-class').innerText = className;
+  document.getElementById('st-pt').innerText = currentUser.currentPt;
+  document.getElementById('st-total').innerText = currentUser.totalPt;
+  document.getElementById('equipped-item').innerText = `装備: ${currentUser.equipped}`;
+
+  const avatarContainer = document.getElementById('st-avatar-container');
+  avatarContainer.innerHTML = renderAvatarWithEquipment(currentUser.avatar, currentUser.equipped);
+
+  const bonusBanner = document.getElementById('bonus-banner');
+  if (gotBonus) bonusBanner.classList.remove('hidden');
+  else bonusBanner.classList.add('hidden');
+
+  const lockMsg = document.getElementById('class-lock-msg');
+  const isMode = studentClass ? studentClass.isClassMode : false;
+  if (isMode) lockMsg.classList.remove('hidden');
+  else lockMsg.classList.add('hidden');
+
+  // もちもの
+  const itemList = document.getElementById('item-list');
+  itemList.innerHTML = '';
+  if (currentUser.items.length === 0) {
+    itemList.innerHTML = '<li class="empty">持っているアイテムはありません</li>';
+  } else {
+    currentUser.items.forEach(item => {
+      const li = document.createElement('li');
+      const isEquipped = currentUser.equipped === item;
+      li.innerHTML = `
+        <span>🎁 ${item} ${isEquipped ? '<b>(装備中)</b>' : ''}</span>
+        ${!isMode ? `<button onclick="toggleEquip('${item}')">${isEquipped ? '外す' : '装備する'}</button>` : ''}
+      `;
+      itemList.appendChild(li);
+    });
+  }
+
+  // スキル
+  const skillList = document.getElementById('skill-list');
+  skillList.innerHTML = '';
+  if (currentUser.skills.length === 0) {
+    skillList.innerHTML = '<li class="empty">まだ習得している技はありません</li>';
+  } else {
+    currentUser.skills.forEach(sk => {
+      const li = document.createElement('li');
+      li.innerText = `🗡️ 【技】${sk}`;
+      skillList.appendChild(li);
+    });
+  }
+
+  // 学習マップ描画（所属クラスの解放状況を参照）
+  const mapContainer = document.getElementById('map-container');
+  mapContainer.innerHTML = '';
+
+  const classSettings = classMissionSettings[currentUser.classId] || {};
+
+  stages.forEach(stg => {
+    const settings = classSettings[stg.id] || new Array(stg.missions.length).fill(false);
+    const unlockedCount = settings.filter(Boolean).length;
+
+    const div = document.createElement('div');
+    div.className = 'stage-building';
+    div.onclick = () => startAdventure(stg.id);
+
+    const prog = (currentUser.progress && currentUser.progress[stg.id]) || 0;
+    const isCompleted = prog >= stg.missions.length;
+
+    div.innerHTML = `
+      🏛️<br><b>${stg.title}</b><br>
+      <small style="color:${isCompleted ? '#48bb78' : '#ecc94b'};">
+        ${isCompleted ? 'クリア済み' : `進行度: ${prog}/${stg.missions.length}`}
+      </small><br>
+      <small style="color:#a0aec0; font-size:0.75em;">
+        解放ミッション: ${unlockedCount}/${stg.missions.length}
+      </small>
+    `;
+    mapContainer.appendChild(div);
+  });
+}
+
+function toggleEquip(itemName) {
+  const studentClass = classes.find(c => c.id === currentUser.classId);
+  if (studentClass && studentClass.isClassMode) return;
+  currentUser.equipped = (currentUser.equipped === itemName) ? 'なし' : itemName;
+  renderStudentDashboard(false);
+}
+
+// アドベンチャー画面
+function startAdventure(stageId) {
+  currentStage = stages.find(s => s.id === stageId);
+  currentDialogueIndex = 0;
+  document.getElementById('adv-title').innerText = `単元: ${currentStage.title}`;
+
+  showScreen('adventure-screen');
+  renderMissionStatus();
+  updateDialogue();
+}
+
+function renderMissionStatus() {
+  const container = document.getElementById('adv-mission-list');
+  container.innerHTML = '';
+
+  const classSettings = classMissionSettings[currentUser.classId] || {};
+  const settings = classSettings[currentStage.id] || [];
+  const clearedCount = (currentUser.progress && currentUser.progress[currentStage.id]) || 0;
+
+  currentStage.missions.forEach((mText, idx) => {
+    const isUnlocked = settings[idx] || false;
+    const isCleared = idx < clearedCount;
+
+    const div = document.createElement('div');
+
+    if (!isUnlocked) {
+      div.className = 'mission-item locked';
+      div.innerText = `🔒 ??? (まだ解放されていません)`;
+    } else if (isCleared) {
+      div.className = 'mission-item cleared';
+      div.innerText = `✅ ${mText}`;
+    } else {
+      div.className = 'mission-item active';
+      div.innerText = `🔓 ${mText} (未達成)`;
+    }
+
+    container.appendChild(div);
+  });
+}
+
+function updateDialogue() {
+  const current = currentStage.dialogues[currentDialogueIndex];
+  document.getElementById('speaker-name').innerText = current.speaker;
+  document.getElementById('dialogue-text').innerText = current.text;
+  document.getElementById('next-dialogue-btn').innerText = (currentDialogueIndex === currentStage.dialogues.length - 1) ? 'もう一度読む' : '次へ ▶';
+}
+
+function nextDialogue() {
+  if (currentDialogueIndex < currentStage.dialogues.length - 1) {
+    currentDialogueIndex++;
+    updateDialogue();
+  } else {
+    currentDialogueIndex = 0;
+    updateDialogue();
+  }
+}
+
+// ガチャ
+function openGachaModal() {
+  const studentClass = classes.find(c => c.id === currentUser.classId);
+  const isMode = studentClass ? studentClass.isClassMode : false;
+
+  const lockMsg = document.getElementById('gacha-lock-msg');
+  const body = document.getElementById('gacha-body');
+
+  if (isMode) {
+    lockMsg.classList.remove('hidden');
+    body.classList.add('hidden');
+  } else {
+    lockMsg.classList.add('hidden');
+    body.classList.remove('hidden');
+    document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+    document.getElementById('gacha-result').classList.add('hidden');
+  }
+  document.getElementById('gacha-modal').classList.remove('hidden');
+}
+
+function closeGachaModal() {
+  document.getElementById('gacha-modal').classList.add('hidden');
+  renderStudentDashboard(false);
+}
+
+function drawRarityItem(pool) {
+  if (pool.length === 0) return 'なし';
+  const totalWeight = pool.reduce((sum, i) => sum + i.weight, 0);
+  let random = Math.random() * totalWeight;
+  for (const item of pool) {
+    if (random < item.weight) return item.name;
+    random -= item.weight;
+  }
+  return pool[0].name;
+}
+
+function playGacha(type) {
+  const cost = type === 'normal' ? 10 : 20;
+  if (currentUser.currentPt < cost) {
+    alert('ポイントが足りません！');
+    return;
+  }
+
+  const pool = type === 'normal' ? normalGachaPool : limitedGachaPool;
+  if (pool.length === 0) {
+    alert('現在ガチャにアイテムが設定されていません');
+    return;
+  }
+
+  currentUser.currentPt -= cost;
+  document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+
+  const reward = drawRarityItem(pool);
+  currentUser.items.push(reward);
+
+  const resultBox = document.getElementById('gacha-result');
+  resultBox.innerText = `🎉 ガチャ結果: 「${reward}」 を獲得しました！（もちものに追加）`;
+  resultBox.classList.remove('hidden');
+}

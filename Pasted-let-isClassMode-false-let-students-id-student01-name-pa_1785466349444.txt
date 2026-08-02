@@ -1,0 +1,270 @@
+let isClassMode = false;
+
+let students = [
+  { id: 'student01', name: '山田 太郎', pass: '1234', currentPt: 30, totalPt: 50, todayPt: 0, checkedInToday: false, skills: [], items: ['木のお守り'], equipped: 'なし' },
+  { id: 'student02', name: '佐藤 花子', pass: '1234', currentPt: 25, totalPt: 80, todayPt: 10, checkedInToday: false, skills: [], items: [], equipped: 'なし' },
+  { id: 'student03', name: '鈴木 一郎', pass: '1234', currentPt: 10, totalPt: 20, todayPt: 0,  checkedInToday: false, skills: [], items: [], equipped: 'なし' }
+];
+
+let currentUser = null;
+
+// ガチャの排出アイテム設定 (レアリティと確率)
+const normalGachaPool = [
+  { name: 'N: 木の剣', rarity: 'N', weight: 60 },
+  { name: 'N: 丸めがね', rarity: 'N', weight: 30 },
+  { name: 'R: 国語の辞書', rarity: 'R', weight: 10 }
+];
+
+const limitedGachaPool = [
+  { name: 'R: 見習いの服', rarity: 'R', weight: 60 },
+  { name: 'SR: 伝説の羽ペン', rarity: 'SR', weight: 30 },
+  { name: 'SSR: 黄金の万年筆', rarity: 'SSR', weight: 10 }
+];
+
+// アドベンチャーデータ
+const adventureData = [
+  { speaker: '私', text: '「そうか、君も蝶の標本を見たいのだね。私の書斎へようこそ…」' },
+  { speaker: '客', text: '「ええ、あなたの集めた見事なコレクションを見せてください。」' },
+  { speaker: '私', text: '「では見せよう。…だが、これを見るたびに私は、少年の頃のある苦い思い出を思い出すのだよ。」' },
+  { speaker: 'システム', text: '✨ クリア！ スキル【情景の想像】を習得し、限定アイテム【蝶のブローチ】を獲得しました！' }
+];
+let currentDialogueIndex = 0;
+
+// ログイン
+function login() {
+  const userId = document.getElementById('user-id').value;
+  const userPass = document.getElementById('user-pass').value;
+
+  if (userId === 'teacher' && userPass === '1234') {
+    currentUser = { id: 'teacher', role: 'teacher' };
+    showScreen('teacher-screen');
+    renderTeacherDashboard();
+    return;
+  }
+
+  const student = students.find(s => s.id === userId && s.pass === userPass);
+  if (student) {
+    currentUser = student;
+    let gotBonus = false;
+    if (isClassMode && !student.checkedInToday) {
+      student.currentPt += 1;
+      student.totalPt += 1;
+      student.todayPt += 1;
+      student.checkedInToday = true;
+      gotBonus = true;
+    }
+    showScreen('student-screen');
+    renderStudentDashboard(gotBonus);
+    return;
+  }
+  alert('IDまたはパスワードが違います');
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-pass').value = '';
+  showScreen('login-screen');
+}
+
+function showScreen(screenId) {
+  ['login-screen', 'teacher-screen', 'student-screen', 'adventure-screen'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(screenId).classList.remove('hidden');
+}
+
+// 教員用画面
+function renderTeacherDashboard() {
+  const grid = document.getElementById('student-grid');
+  grid.innerHTML = '';
+  students.forEach(st => {
+    const card = document.createElement('div');
+    card.className = `student-card ${st.todayPt === 0 ? 'low-pt' : ''}`;
+    card.innerHTML = `
+      <h4>${st.name}</h4>
+      <p>本日獲得: <b>+${st.todayPt} pt</b></p>
+      <p><small>所持: ${st.currentPt}pt / 累計: ${st.totalPt}pt</small></p>
+      <div class="pt-buttons">
+        <button onclick="addPoint('${st.id}', 1)">+1pt</button>
+        <button onclick="addPoint('${st.id}', 5)">+5pt</button>
+        <button onclick="addPoint('${st.id}', 10)">+10pt</button>
+      </div>
+      <div class="custom-pt-box">
+        <input type="number" id="custom-pt-${st.id}" placeholder="数">
+        <button onclick="addCustomPoint('${st.id}')">加算</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function addPoint(studentId, pt) {
+  const st = students.find(s => s.id === studentId);
+  if (st) {
+    st.currentPt += pt;
+    st.totalPt += pt;
+    st.todayPt += pt;
+    renderTeacherDashboard();
+  }
+}
+
+function addCustomPoint(studentId) {
+  const input = document.getElementById(`custom-pt-${studentId}`);
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    addPoint(studentId, val);
+  }
+}
+
+function toggleClassMode() {
+  isClassMode = !isClassMode;
+  document.getElementById('mode-text').innerText = isClassMode ? '授業中 (ON)' : '授業外 (OFF)';
+  document.getElementById('mode-text').className = isClassMode ? 'text-on' : 'text-off';
+  document.getElementById('mode-btn').innerText = isClassMode ? '授業を終了する (OFFにする)' : '授業を開始する (ONにする)';
+}
+
+function sortStudentsByToday() {
+  students.sort((a, b) => a.todayPt - b.todayPt);
+  renderTeacherDashboard();
+}
+
+// 生徒用画面
+function renderStudentDashboard(gotBonus) {
+  document.getElementById('st-name').innerText = currentUser.name;
+  document.getElementById('st-pt').innerText = currentUser.currentPt;
+  document.getElementById('st-total').innerText = currentUser.totalPt;
+  document.getElementById('equipped-item').innerText = `装備: ${currentUser.equipped}`;
+
+  const bonusBanner = document.getElementById('bonus-banner');
+  if (gotBonus) bonusBanner.classList.remove('hidden');
+  else bonusBanner.classList.add('hidden');
+
+  // 授業中の装備着脱制限
+  const lockMsg = document.getElementById('class-lock-msg');
+  if (isClassMode) lockMsg.classList.remove('hidden');
+  else lockMsg.classList.add('hidden');
+
+  // 所持アイテム一覧の表示
+  const itemList = document.getElementById('item-list');
+  itemList.innerHTML = '';
+  if (currentUser.items.length === 0) {
+    itemList.innerHTML = '<li class="empty">持っているアイテムはありません</li>';
+  } else {
+    currentUser.items.forEach((item, idx) => {
+      const li = document.createElement('li');
+      const isEquipped = currentUser.equipped === item;
+      li.innerHTML = `
+        <span>🎁 ${item} ${isEquipped ? '<b>(装備中)</b>' : ''}</span>
+        ${!isClassMode ? `<button onclick="toggleEquip('${item}')">${isEquipped ? '外す' : '装備する'}</button>` : ''}
+      `;
+      itemList.appendChild(li);
+    });
+  }
+
+  // スキル表示
+  const skillList = document.getElementById('skill-list');
+  skillList.innerHTML = '';
+  if (currentUser.skills.length === 0) {
+    skillList.innerHTML = '<li class="empty">まだ習得している技はありません</li>';
+  } else {
+    currentUser.skills.forEach(sk => {
+      const li = document.createElement('li');
+      li.innerText = `🗡️ 【技】${sk}`;
+      skillList.appendChild(li);
+    });
+  }
+}
+
+// 装備の着脱
+function toggleEquip(itemName) {
+  if (isClassMode) return;
+  if (currentUser.equipped === itemName) {
+    currentUser.equipped = 'なし';
+  } else {
+    currentUser.equipped = itemName;
+  }
+  renderStudentDashboard(false);
+}
+
+// アドベンチャー進行
+function startAdventure(title) {
+  currentDialogueIndex = 0;
+  document.getElementById('adv-title').innerText = `単元: ${title}`;
+  showScreen('adventure-screen');
+  updateDialogue();
+}
+
+function updateDialogue() {
+  const current = adventureData[currentDialogueIndex];
+  document.getElementById('speaker-name').innerText = current.speaker;
+  document.getElementById('dialogue-text').innerText = current.text;
+  document.getElementById('next-dialogue-btn').innerText = (currentDialogueIndex === adventureData.length - 1) ? 'マップに戻る' : '次へ ▶';
+}
+
+function nextDialogue() {
+  if (currentDialogueIndex < adventureData.length - 1) {
+    currentDialogueIndex++;
+    updateDialogue();
+  } else {
+    if (!currentUser.skills.includes('情景の想像')) {
+      currentUser.skills.push('情景の想像');
+      currentUser.items.push('蝶のブローチ');
+    }
+    showScreen('student-screen');
+    renderStudentDashboard(false);
+  }
+}
+
+// ガチャ制御
+function openGachaModal() {
+  const lockMsg = document.getElementById('gacha-lock-msg');
+  const body = document.getElementById('gacha-body');
+
+  if (isClassMode) {
+    lockMsg.classList.remove('hidden');
+    body.classList.add('hidden');
+  } else {
+    lockMsg.classList.add('hidden');
+    body.classList.remove('hidden');
+    document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+    document.getElementById('gacha-result').classList.add('hidden');
+  }
+  document.getElementById('gacha-modal').classList.remove('hidden');
+}
+
+function closeGachaModal() {
+  document.getElementById('gacha-modal').classList.add('hidden');
+  renderStudentDashboard(false);
+}
+
+// 重み付きランダム抽選（確率計算）
+function drawRarityItem(pool) {
+  const totalWeight = pool.reduce((sum, i) => sum + i.weight, 0);
+  let random = Math.random() * totalWeight;
+  for (const item of pool) {
+    if (random < item.weight) return item.name;
+    random -= item.weight;
+  }
+  return pool[0].name;
+}
+
+function playGacha(type) {
+  const cost = type === 'normal' ? 10 : 20;
+  if (currentUser.currentPt < cost) {
+    alert('ポイントが足りません！');
+    return;
+  }
+
+  currentUser.currentPt -= cost;
+  document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+
+  const pool = type === 'normal' ? normalGachaPool : limitedGachaPool;
+  const reward = drawRarityItem(pool);
+
+  currentUser.items.push(reward); // 重複OKで手札に追加
+
+  const resultBox = document.getElementById('gacha-result');
+  resultBox.innerText = `🎉 ガチャ結果: 「${reward}」 を獲得しました！（もちものに追加）`;
+  resultBox.classList.remove('hidden');
+}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>国語マスター RPGシステム</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 1. ログイン画面 -->
+  <div id="login-screen" class="card">
+    <h1>⚔️ 国語マスター RPG ログイン</h1>
+    <div class="form-group">
+      <label>ユーザーID</label>
+      <input type="text" id="user-id" placeholder="IDを入力 (教員: teacher / 生徒: student01)">
+    </div>
+    <div class="form-group">
+      <label>パスワード</label>
+      <input type="password" id="user-pass" placeholder="パスワードを入力">
+    </div>
+    <button onclick="login()">ログイン</button>
+    <p class="hint">※テスト用パスワードはすべて <b>1234</b> です</p>
+  </div>
+
+  <!-- 初回アバター選択モーダル -->
+  <div id="avatar-select-modal" class="modal hidden">
+    <div class="modal-content card">
+      <h3>👤 初回アバター選択</h3>
+      <p>あなたの冒険者アバターを選んでください！</p>
+      <div class="avatar-select-container">
+        <div class="avatar-option" onclick="selectAvatar('boy.png')">
+          <div class="img-crop"><img src="boy.png" alt="男の子"></div>
+          <p>男の子</p>
+        </div>
+        <div class="avatar-option" onclick="selectAvatar('girl.png')">
+          <div class="img-crop"><img src="girl.png" alt="女の子"></div>
+          <p>女の子</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 教員画面 -->
+  <div id="teacher-screen" class="hidden">
+    <header>
+      <h2>👨‍🏫 教員管理ダッシュボード</h2>
+      <button onclick="logout()" class="btn-logout">ログアウト</button>
+    </header>
+
+    <div class="card alert-box">
+      <h3>授業モード切り替え</h3>
+      <p>現在の状態: <strong id="mode-text" class="text-off">授業外 (OFF)</strong></p>
+      <button id="mode-btn" onclick="toggleClassMode()" class="btn-primary">授業を開始する (ONにする)</button>
+    </div>
+
+    <!-- ポイント付与（アバター表示＆柔軟なPt加算） -->
+    <div class="card">
+      <div class="card-header">
+        <h3>生徒一覧 (ポイント付与)</h3>
+        <button onclick="sortStudentsByToday()" class="btn-secondary">本日獲得ptが少ない順に並び替え</button>
+      </div>
+      <div id="student-grid" class="grid"></div>
+    </div>
+
+    <!-- 単元＆ストーリー追加設定機能 -->
+    <div class="card">
+      <h3>📖 新しい単元・ストーリーの設定</h3>
+      <div class="form-group">
+        <label>単元タイトル</label>
+        <input type="text" id="new-stage-title" placeholder="例: 走れメロス">
+      </div>
+      <div class="form-group">
+        <label>会話イベント（「話者: セリフ」の形式で改行入力）</label>
+        <textarea id="new-stage-dialogue" rows="4" placeholder="メロス: 走らねばならぬ！&#10;セリヌンティウス: 待っていたぞ、メロス！"></textarea>
+      </div>
+      <div class="form-group">
+        <label>クリア時獲得スキル名</label>
+        <input type="text" id="new-stage-skill" placeholder="例: 信念の走走">
+      </div>
+      <button onclick="addNewStage()" class="btn-primary">単元を追加する</button>
+    </div>
+  </div>
+
+  <!-- 3. 生徒メイン画面 -->
+  <div id="student-screen" class="hidden">
+    <header>
+      <h2>⚔️ 国語マスター 冒険の書</h2>
+      <button onclick="logout()" class="btn-logout">ログアウト</button>
+    </header>
+
+    <div class="card">
+      <div id="bonus-banner" class="bonus-banner hidden">
+        🎉 授業出席完了！ ログインボーナス <b>+1pt</b> 獲得！
+      </div>
+      <div class="status-container">
+        <div class="avatar-box">
+          <div id="st-avatar-img" class="img-crop"></div>
+          <small id="equipped-item">装備: なし</small>
+        </div>
+        <div class="status-info">
+          <p>名前: <strong id="st-name">-</strong></p>
+          <p>所持ポイント (ガチャ用): <strong id="st-pt" class="highlight">0</strong> pt</p>
+          <p>累計ポイント (評価用): <strong id="st-total">0</strong> pt</p>
+          <button onclick="openGachaModal()" class="btn-gacha">🎰 ガチャを引く</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- もちもの画面 -->
+    <div class="card">
+      <h3>🎒 もちもの (装備の変更)</h3>
+      <div id="class-lock-msg" class="lock-msg hidden">🔒 授業中は装備の着脱ができません</div>
+      <ul id="item-list" class="item-list"></ul>
+    </div>
+
+    <!-- スキル一覧 -->
+    <div class="card">
+      <h3>✨ 習得したスキル（技）</h3>
+      <ul id="skill-list" class="skill-list">
+        <li class="empty">まだ習得している技はありません</li>
+      </ul>
+    </div>
+
+    <!-- RPGマップ -->
+    <div class="card">
+      <h3>🗺️ 学習マップ</h3>
+      <div id="map-container" class="map-container"></div>
+    </div>
+  </div>
+
+  <!-- 4. アドベンチャー画面 -->
+  <div id="adventure-screen" class="hidden card adventure-box">
+    <h3 id="adv-title">単元タイトル</h3>
+    <div class="scene-window">
+      <div id="scene-bg" class="scene-bg">📖 物語の舞台 📖</div>
+      <div class="dialogue-box">
+        <p id="speaker-name" class="speaker">話者名</p>
+        <p id="dialogue-text" class="text">テキストがここに入ります</p>
+      </div>
+    </div>
+    <button id="next-dialogue-btn" onclick="nextDialogue()" class="btn-primary">次へ ▶</button>
+  </div>
+
+  <!-- 5. ガチャモーダル -->
+  <div id="gacha-modal" class="modal hidden">
+    <div class="modal-content card">
+      <h3>🎰 ガチャショップ</h3>
+      <div id="gacha-lock-msg" class="lock-msg hidden">🔒 授業中はガチャを引くことができません。<br>授業が終わったら楽しもう！</div>
+      
+      <div id="gacha-body">
+        <p>所持ポイント: <strong id="gacha-user-pt">0</strong> pt</p>
+        <div class="gacha-options">
+          <div class="gacha-card">
+            <h4>通常ガチャ</h4>
+            <p>消費: 10 pt</p>
+            <button onclick="playGacha('normal')" class="btn-primary">1回引く</button>
+          </div>
+          <div class="gacha-card limited">
+            <h4>🔥 期間限定ガチャ</h4>
+            <p>消費: 20 pt (SSR確率UP!)</p>
+            <button onclick="playGacha('limited')" class="btn-gacha">1回引く</button>
+          </div>
+        </div>
+        <div id="gacha-result" class="gacha-result hidden"></div>
+      </div>
+
+      <button onclick="closeGachaModal()" class="btn-secondary" style="margin-top: 15px;">閉じる</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

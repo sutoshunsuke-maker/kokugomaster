@@ -1,0 +1,134 @@
+// システムのデータ管理（初期データ）
+let isClassMode = false; // 授業モード (ON/OFF)
+
+let students = [
+  { id: 'student01', name: '山田 太郎', pass: '1234', currentPt: 10, totalPt: 50, todayPt: 0, checkedInToday: false },
+  { id: 'student02', name: '佐藤 花子', pass: '1234', currentPt: 25, totalPt: 80, todayPt: 10, checkedInToday: false },
+  { id: 'student03', name: '鈴木 一郎', pass: '1234', currentPt: 0,  totalPt: 20, todayPt: 0,  checkedInToday: false }
+];
+
+let currentUser = null;
+
+// ログイン処理
+function login() {
+  const userId = document.getElementById('user-id').value;
+  const userPass = document.getElementById('user-pass').value;
+
+  // 教員ログイン
+  if (userId === 'teacher' && userPass === '1234') {
+    currentUser = { id: 'teacher', role: 'teacher' };
+    showScreen('teacher-screen');
+    renderTeacherDashboard();
+    return;
+  }
+
+  // 生徒ログイン
+  const student = students.find(s => s.id === userId && s.pass === userPass);
+  if (student) {
+    currentUser = { ...student, role: 'student' };
+    
+    // 授業モードがONかつ、本日まだ出席していない場合ログインボーナス
+    let gotBonus = false;
+    if (isClassMode && !student.checkedInToday) {
+      student.currentPt += 1;
+      student.totalPt += 1;
+      student.todayPt += 1;
+      student.checkedInToday = true;
+      gotBonus = true;
+    }
+
+    showScreen('student-screen');
+    renderStudentDashboard(student, gotBonus);
+    return;
+  }
+
+  alert('IDまたはパスワードが違います');
+}
+
+// ログアウト
+function logout() {
+  currentUser = null;
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-pass').value = '';
+  showScreen('login-screen');
+}
+
+// 画面切替
+function showScreen(screenId) {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('teacher-screen').classList.add('hidden');
+  document.getElementById('student-screen').classList.add('hidden');
+  
+  document.getElementById(screenId).classList.remove('hidden');
+}
+
+// 教員画面の更新
+function renderTeacherDashboard() {
+  const grid = document.getElementById('student-grid');
+  grid.innerHTML = '';
+
+  students.forEach(st => {
+    const card = document.createElement('div');
+    card.className = `student-card ${st.todayPt === 0 ? 'low-pt' : ''}`;
+    card.innerHTML = `
+      <h4>${st.name}</h4>
+      <p>本日獲得: <b>+${st.todayPt} pt</b></p>
+      <p><small>所持: ${st.currentPt}pt / 累計: ${st.totalPt}pt</small></p>
+      <button onclick="addPoint('${st.id}', 10)">+10pt 付与</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ポイント手動付与
+function addPoint(studentId, pt) {
+  const st = students.find(s => s.id === studentId);
+  if (st) {
+    st.currentPt += pt;
+    st.totalPt += pt;
+    st.todayPt += pt;
+    renderTeacherDashboard();
+  }
+}
+
+// 授業モード切り替え
+function toggleClassMode() {
+  isClassMode = !isClassMode;
+  const modeText = document.getElementById('mode-text');
+  const modeBtn = document.getElementById('mode-btn');
+
+  if (isClassMode) {
+    modeText.innerText = '授業中 (ON)';
+    modeText.className = 'text-on';
+    modeBtn.innerText = '授業を終了する (OFFにする)';
+  } else {
+    modeText.innerText = '授業外 (OFF)';
+    modeText.className = 'text-off';
+    modeBtn.innerText = '授業を開始する (ONにする)';
+  }
+}
+
+// 本日ptが少ない順に並び替え
+function sortStudentsByToday() {
+  students.sort((a, b) => a.todayPt - b.todayPt);
+  renderTeacherDashboard();
+}
+
+// 生徒画面の更新
+function renderStudentDashboard(student, gotBonus) {
+  document.getElementById('st-name').innerText = student.name;
+  document.getElementById('st-pt').innerText = student.currentPt;
+  document.getElementById('st-total').innerText = student.totalPt;
+
+  const bonusBanner = document.getElementById('bonus-banner');
+  if (gotBonus) {
+    bonusBanner.classList.remove('hidden');
+  } else {
+    bonusBanner.classList.add('hidden');
+  }
+}
+
+// ステージ入場（仮演出）
+function enterStage(stageName) {
+  alert(`「${stageName}」のステージへ移動します！（※今後のステップで書斎アドベンチャー画面を実装します）`);
+}

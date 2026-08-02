@@ -1,0 +1,198 @@
+let isClassMode = false;
+
+let students = [
+  { id: 'student01', name: '山田 太郎', pass: '1234', currentPt: 30, totalPt: 50, todayPt: 0, checkedInToday: false, skills: [], items: [], equipped: 'なし' },
+  { id: 'student02', name: '佐藤 花子', pass: '1234', currentPt: 25, totalPt: 80, todayPt: 10, checkedInToday: false, skills: [], items: [], equipped: 'なし' },
+  { id: 'student03', name: '鈴木 一郎', pass: '1234', currentPt: 10, totalPt: 20, todayPt: 0,  checkedInToday: false, skills: [], items: [], equipped: 'なし' }
+];
+
+let currentUser = null;
+
+// アドベンチャー会話データ（少年の日の思い出）
+const adventureData = [
+  { speaker: '私', text: '「そうか、君も蝶の標本を見たいのだね。私の書斎へようこそ…」' },
+  { speaker: '客', text: '「ええ、あなたの集めた見事なコレクションを見せてください。」' },
+  { speaker: '私', text: '「では見せよう。…だが、これを見るたびに私は、少年の頃のある苦い思い出を思い出すのだよ。」' },
+  { speaker: 'システム', text: '✨ クリア！ スキル【情景の想像】を習得し、限定アイテム【蝶のブローチ】を獲得しました！' }
+];
+let currentDialogueIndex = 0;
+
+// ログイン
+function login() {
+  const userId = document.getElementById('user-id').value;
+  const userPass = document.getElementById('user-pass').value;
+
+  if (userId === 'teacher' && userPass === '1234') {
+    currentUser = { id: 'teacher', role: 'teacher' };
+    showScreen('teacher-screen');
+    renderTeacherDashboard();
+    return;
+  }
+
+  const student = students.find(s => s.id === userId && s.pass === userPass);
+  if (student) {
+    currentUser = student;
+    let gotBonus = false;
+    if (isClassMode && !student.checkedInToday) {
+      student.currentPt += 1;
+      student.totalPt += 1;
+      student.todayPt += 1;
+      student.checkedInToday = true;
+      gotBonus = true;
+    }
+    showScreen('student-screen');
+    renderStudentDashboard(gotBonus);
+    return;
+  }
+  alert('IDまたはパスワードが違います');
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('user-id').value = '';
+  document.getElementById('user-pass').value = '';
+  showScreen('login-screen');
+}
+
+function showScreen(screenId) {
+  ['login-screen', 'teacher-screen', 'student-screen', 'adventure-screen'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById(screenId).classList.remove('hidden');
+}
+
+// 教員用機能
+function renderTeacherDashboard() {
+  const grid = document.getElementById('student-grid');
+  grid.innerHTML = '';
+  students.forEach(st => {
+    const card = document.createElement('div');
+    card.className = `student-card ${st.todayPt === 0 ? 'low-pt' : ''}`;
+    card.innerHTML = `
+      <h4>${st.name}</h4>
+      <p>本日獲得: <b>+${st.todayPt} pt</b></p>
+      <p><small>所持: ${st.currentPt}pt / 累計: ${st.totalPt}pt</small></p>
+      <button onclick="addPoint('${st.id}', 10)">+10pt 付与</button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function addPoint(studentId, pt) {
+  const st = students.find(s => s.id === studentId);
+  if (st) {
+    st.currentPt += pt;
+    st.totalPt += pt;
+    st.todayPt += pt;
+    renderTeacherDashboard();
+  }
+}
+
+function toggleClassMode() {
+  isClassMode = !isClassMode;
+  document.getElementById('mode-text').innerText = isClassMode ? '授業中 (ON)' : '授業外 (OFF)';
+  document.getElementById('mode-text').className = isClassMode ? 'text-on' : 'text-off';
+  document.getElementById('mode-btn').innerText = isClassMode ? '授業を終了する (OFFにする)' : '授業を開始する (ONにする)';
+}
+
+function sortStudentsByToday() {
+  students.sort((a, b) => a.todayPt - b.todayPt);
+  renderTeacherDashboard();
+}
+
+// 生徒用機能
+function renderStudentDashboard(gotBonus) {
+  document.getElementById('st-name').innerText = currentUser.name;
+  document.getElementById('st-pt').innerText = currentUser.currentPt;
+  document.getElementById('st-total').innerText = currentUser.totalPt;
+  document.getElementById('equipped-item').innerText = `装備: ${currentUser.equipped}`;
+
+  const bonusBanner = document.getElementById('bonus-banner');
+  if (gotBonus) bonusBanner.classList.remove('hidden');
+  else bonusBanner.classList.add('hidden');
+
+  // スキル表示
+  const skillList = document.getElementById('skill-list');
+  skillList.innerHTML = '';
+  if (currentUser.skills.length === 0) {
+    skillList.innerHTML = '<li class="empty">まだ習得している技はありません</li>';
+  } else {
+    currentUser.skills.forEach(sk => {
+      const li = document.createElement('li');
+      li.innerText = `🗡️ 【技】${sk}`;
+      skillList.appendChild(li);
+    });
+  }
+}
+
+// アドベンチャー（物語体験）の進行
+function startAdventure(title) {
+  currentDialogueIndex = 0;
+  document.getElementById('adv-title').innerText = `単元: ${title}`;
+  showScreen('adventure-screen');
+  updateDialogue();
+}
+
+function updateDialogue() {
+  const current = adventureData[currentDialogueIndex];
+  document.getElementById('speaker-name').innerText = current.speaker;
+  document.getElementById('dialogue-text').innerText = current.text;
+
+  if (currentDialogueIndex === adventureData.length - 1) {
+    document.getElementById('next-dialogue-btn').innerText = 'マップに戻る';
+  } else {
+    document.getElementById('next-dialogue-btn').innerText = '次へ ▶';
+  }
+}
+
+function nextDialogue() {
+  if (currentDialogueIndex < adventureData.length - 1) {
+    currentDialogueIndex++;
+    updateDialogue();
+  } else {
+    // 最終セリフ後にクリア報酬を付与
+    if (!currentUser.skills.includes('情景の想像')) {
+      currentUser.skills.push('情景の想像');
+      currentUser.items.push('蝶のブローチ');
+      currentUser.equipped = '蝶のブローチ';
+    }
+    showScreen('student-screen');
+    renderStudentDashboard(false);
+  }
+}
+
+// ガチャ画面
+function openGachaModal() {
+  document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+  document.getElementById('gacha-result').classList.add('hidden');
+  document.getElementById('gacha-modal').classList.remove('hidden');
+}
+
+function closeGachaModal() {
+  document.getElementById('gacha-modal').classList.add('hidden');
+  renderStudentDashboard(false);
+}
+
+function playGacha(type) {
+  const cost = type === 'normal' ? 10 : 20;
+  if (currentUser.currentPt < cost) {
+    alert('ポイントが足リません！授業でポイントを獲得しましょう。');
+    return;
+  }
+
+  currentUser.currentPt -= cost;
+  document.getElementById('gacha-user-pt').innerText = currentUser.currentPt;
+
+  const normalItems = ['木の剣', '見習いの服', '丸めがね', '国語の教科書'];
+  const limitedItems = ['★SSR 黄金の万年筆', '★SR 伝説の羽ペン', '★SR 蝶のブローチ(金)'];
+  
+  const pool = type === 'normal' ? normalItems : limitedItems;
+  const reward = pool[Math.floor(Math.random() * pool.length)];
+
+  currentUser.items.push(reward);
+  currentUser.equipped = reward; // 自動装備
+
+  const resultBox = document.getElementById('gacha-result');
+  resultBox.innerText = `🎉 ガチャ結果: 「${reward}」 を獲得・装備しました！`;
+  resultBox.classList.remove('hidden');
+}
