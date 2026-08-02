@@ -1,0 +1,1 @@
+{"version":3,"file":"unitUpdate.d.ts","sourceRoot":"","sources":["../../../src/generated/types/unitUpdate.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,MAAM,WAAW,UAAU;IACzB,mBAAmB;IACnB,KAAK,CAAC,EAAE,MAAM,CAAC;IACf,gBAAgB;IAChB,WAAW,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;IAC5B,UAAU,CAAC,EAAE,MAAM,CAAC;CACrB"}
