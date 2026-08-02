@@ -1,0 +1,442 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: 国語授業進度管理 API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: units
+    description: 単元 (unit) operations
+  - name: lessons
+    description: 授業 (lesson) operations
+  - name: progress
+    description: Progress summary operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /units:
+    get:
+      operationId: listUnits
+      tags: [units]
+      summary: List all units
+      description: Returns all units with their lessons and progress
+      responses:
+        "200":
+          description: List of units
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UnitWithLessons"
+    post:
+      operationId: createUnit
+      tags: [units]
+      summary: Create a unit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnitInput"
+      responses:
+        "201":
+          description: Created unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unit"
+
+  /units/{id}:
+    get:
+      operationId: getUnit
+      tags: [units]
+      summary: Get a unit with its lessons
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Unit with lessons
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnitWithLessons"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateUnit
+      tags: [units]
+      summary: Update a unit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnitUpdate"
+      responses:
+        "200":
+          description: Updated unit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Unit"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteUnit
+      tags: [units]
+      summary: Delete a unit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /lessons:
+    get:
+      operationId: listLessons
+      tags: [lessons]
+      summary: List all lessons
+      responses:
+        "200":
+          description: List of lessons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lesson"
+    post:
+      operationId: createLesson
+      tags: [lessons]
+      summary: Create a lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonInput"
+      responses:
+        "201":
+          description: Created lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+
+  /lessons/{id}:
+    get:
+      operationId: getLesson
+      tags: [lessons]
+      summary: Get a lesson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateLesson
+      tags: [lessons]
+      summary: Update a lesson (including status)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LessonUpdate"
+      responses:
+        "200":
+          description: Updated lesson
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lesson"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteLesson
+      tags: [lessons]
+      summary: Delete a lesson
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /progress/summary:
+    get:
+      operationId: getProgressSummary
+      tags: [progress]
+      summary: Get overall progress summary
+      description: Returns overall completion statistics and current progress
+      responses:
+        "200":
+          description: Progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressSummary"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Unit:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - orderIndex
+        - createdAt
+
+    UnitWithLessons:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: number
+        createdAt:
+          type: string
+        lessons:
+          type: array
+          items:
+            $ref: "#/components/schemas/Lesson"
+        completedCount:
+          type: number
+        totalCount:
+          type: number
+      required:
+        - id
+        - title
+        - orderIndex
+        - createdAt
+        - lessons
+        - completedCount
+        - totalCount
+
+    UnitInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        orderIndex:
+          type: number
+      required:
+        - title
+
+    UnitUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: ["string", "null"]
+        orderIndex:
+          type: number
+
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: number
+        unitId:
+          type: number
+        title:
+          type: string
+        memo:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [upcoming, in_progress, completed]
+        lessonDate:
+          type: ["string", "null"]
+        orderIndex:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - unitId
+        - title
+        - status
+        - orderIndex
+        - createdAt
+
+    LessonInput:
+      type: object
+      properties:
+        unitId:
+          type: number
+        title:
+          type: string
+          minLength: 1
+        memo:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, in_progress, completed]
+        lessonDate:
+          type: string
+        orderIndex:
+          type: number
+      required:
+        - unitId
+        - title
+
+    LessonUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        memo:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [upcoming, in_progress, completed]
+        lessonDate:
+          type: ["string", "null"]
+        orderIndex:
+          type: number
+        unitId:
+          type: number
+
+    ProgressSummary:
+      type: object
+      properties:
+        totalUnits:
+          type: number
+        totalLessons:
+          type: number
+        completedLessons:
+          type: number
+        inProgressLessons:
+          type: number
+        upcomingLessons:
+          type: number
+        completionPercent:
+          type: number
+        currentUnit:
+          $ref: "#/components/schemas/Unit"
+        currentLesson:
+          $ref: "#/components/schemas/Lesson"
+      required:
+        - totalUnits
+        - totalLessons
+        - completedLessons
+        - inProgressLessons
+        - upcomingLessons
+        - completionPercent
