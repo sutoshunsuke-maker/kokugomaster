@@ -1,0 +1,392 @@
+body {
+  font-family: sans-serif;
+  background-color: #2b2b36;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+}
+
+.card {
+  background-color: #3b3b4f;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.hidden { display: none !important; }
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; }
+input, textarea, select { width: 100%; padding: 10px; border-radius: 6px; border: none; box-sizing: border-box; background: #1a1a24; color: #fff; }
+
+button {
+  background-color: #4e54c8;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+button:hover { background-color: #6366f1; }
+.btn-logout { background-color: #e53e3e; }
+.btn-secondary { background-color: #4a5568; }
+.btn-danger { background-color: #c53030; }
+.btn-gacha { background-color: #d69e2e; }
+.btn-success { background-color: #38a169; }
+
+.hint { font-size: 0.85em; color: #a0aec0; margin-top: 15px; }
+.hint-text { font-size: 0.75em; color: #a0aec0; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; margin-top: 15px; }
+
+/* クラス選択バー */
+.class-select-card {
+  border: 2px solid #6366f1;
+  background: #2d2d42;
+}
+
+/* タブデザイン */
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.tab-btn {
+  background: #2b2b36;
+  color: #a0aec0;
+  border: 1px solid #4a5568;
+  padding: 10px 18px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  font-size: 0.95em;
+}
+.tab-btn.active {
+  background: #3b3b4f;
+  color: #fff;
+  border-color: #6366f1;
+  border-bottom: none;
+  font-weight: bold;
+}
+
+/* アバター表示枠 */
+.sprite-box {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto;
+  position: relative;
+  border-radius: 8px;
+  background: #22222e;
+  border: 2px solid #5a5a7a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.sprite-box.clickable { cursor: pointer; }
+.sprite-box.clickable:hover { border-color: #6366f1; }
+
+.sprite-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  position: absolute;
+}
+
+.student-card { background-color: #4a4a6a; padding: 15px; border-radius: 8px; text-align: center; }
+.student-card.low-pt { border: 2px solid #ecc94b; }
+.pt-buttons { display: flex; gap: 5px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.pt-buttons button { padding: 4px 8px; font-size: 0.8em; }
+
+.custom-pt-box { display: flex; gap: 5px; margin-top: 8px; justify-content: center; }
+.custom-pt-box input { width: 60px; padding: 4px; text-align: center; }
+.custom-pt-box button { padding: 4px 8px; font-size: 0.8em; background-color: #38a169; }
+
+.student-mission-box {
+  background: #2a2a3a;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 10px;
+  text-align: left;
+  font-size: 0.85em;
+}
+
+.highlight { color: #48bb78; font-size: 1.2em; }
+.text-off { color: #f56565; font-weight: bold; }
+.text-on { color: #48bb78; font-weight: bold; }
+
+.bonus-banner { background-color: #38a169; color: white; padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: center; }
+/* 生徒プロフィールカード — 3カラム */
+.status-container {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+.avatar-box {
+  text-align: center;
+  background: #2b2b36;
+  padding: 14px 12px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.student-stats {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* 右カラム：縦並びナビゲーション */
+.student-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex-shrink: 0;
+  justify-content: center;
+}
+.st-nav-btn {
+  width: 110px;
+  background: #2d3748;
+  color: #e2e8f0;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  padding: 7px 6px;
+  font-size: 0.78em;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.st-nav-btn:hover  { background: #3a4a5c; border-color: #6366f1; }
+.st-nav-btn.active { background: #4338ca; border-color: #818cf8; color: #fff; font-weight: bold; }
+
+.item-list, .skill-list { list-style: none; padding: 0; }
+.item-list li { background: #4a4a6a; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.skill-list li { background: #4a4a6a; padding: 10px; border-radius: 6px; margin-bottom: 5px; border-left: 4px solid #48bb78; }
+
+.map-container { display: flex; gap: 15px; padding: 20px; background: #22222e; border-radius: 8px; flex-wrap: wrap; }
+.stage-building { background: #4a4a6a; padding: 20px; border-radius: 10px; cursor: pointer; text-align: center; border: 2px solid #6366f1; min-width: 140px; }
+
+.lock-msg { background: #e53e3e; color: white; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; margin-bottom: 10px; }
+
+/* アバター選択 */
+.avatar-select-container { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+.avatar-option { background: #4a4a6a; padding: 15px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; }
+.avatar-option:hover { border-color: #6366f1; background: #5a5a7a; }
+
+/* 管理用リスト */
+.teacher-stage-item, .gacha-manage-item {
+  background: #2b2b36;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ミッション切り替えトグルリスト */
+.mission-toggle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+.mission-toggle-item {
+  background: #2b2b36;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #4a5568;
+}
+.mission-toggle-item.unlocked { border-color: #48bb78; }
+.mission-toggle-item.locked { border-color: #e53e3e; opacity: 0.7; }
+
+/* アドベンチャー画面 */
+.mission-status-box {
+  background: #2a2a3a;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+.mission-status-box h4 { margin: 0 0 8px 0; font-size: 0.95em; color: #ecc94b; }
+.mission-item { font-size: 0.9em; margin-bottom: 4px; }
+.mission-item.cleared { color: #48bb78; font-weight: bold; }
+.mission-item.active { color: #6366f1; font-weight: bold; }
+.mission-item.locked { color: #a0aec0; }
+
+.scene-window { background: #1a1a24; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+.dialogue-with-narrator { display: flex; gap: 12px; align-items: flex-start; }
+.narrator-portrait {
+  width: 110px; height: 110px; min-width: 110px;
+  border-radius: 8px; border: 2px solid #6366f1;
+  background: #2a2a3a; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2em; flex-shrink: 0;
+}
+.dialogue-box { flex: 1; background: #0f0f15; padding: 15px; border-radius: 6px; border: 2px solid #a0aec0; min-height: 110px; display: flex; flex-direction: column; }
+.speaker { font-weight: bold; color: #ecc94b; margin: 0 0 5px 0; }
+.text { margin: 0; font-size: 1.05em; line-height: 1.5; }
+
+/* ログイン画面 世界観テキスト */
+.lore-box {
+  background: linear-gradient(135deg, #1e1a3a 0%, #2a1f4a 100%);
+  border: 1px solid #6366f1; border-radius: 8px;
+  padding: 12px 16px; margin-bottom: 18px; text-align: center;
+}
+.lore-text { margin: 0; font-size: 0.88em; line-height: 1.8; color: #c8bfee; }
+.lore-title { color: #ecc94b; font-size: 1.05em; letter-spacing: 0.05em; }
+
+.adv-controls { display: flex; gap: 10px; }
+
+/* 獲得スキル表示 */
+.skill-acquired-box {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 15px;
+  font-size: 0.95em;
+  text-align: center;
+}
+.skill-acquired-done {
+  background: linear-gradient(135deg, #2a4a2a, #1a3a1a);
+  border: 2px solid #48bb78;
+  color: #c6f6d5;
+}
+.skill-acquired-done strong { color: #68d391; font-size: 1.1em; }
+.skill-acquired-locked {
+  background: #2a2a3a;
+  border: 2px dashed #4a5568;
+  color: #718096;
+}
+.skill-acquired-locked strong { color: #a0aec0; }
+
+/* 掲示板 添付ファイル */
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.8em;
+  color: #e2e8f0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ann-files-student {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.ann-file-block { /* 画像ブロック */ }
+.ann-file-dl-btn {
+  font-size: 0.85em;
+  padding: 5px 14px;
+  text-align: left;
+}
+
+/* 単元のまとめ（全ミッション達成後に表示） */
+.stage-summary-box {
+  background: linear-gradient(135deg, #1a2a3a, #1a1f3a);
+  border: 2px solid #6366f1;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 15px;
+}
+.stage-summary-box h4 { margin: 0 0 8px 0; color: #a5b4fc; font-size: 0.95em; }
+.stage-summary-box p  { margin: 0; font-size: 0.92em; line-height: 1.7; color: #e2e8f0; }
+
+/* モーダル */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-content { width: 90%; max-width: 500px; text-align: center; }
+.gacha-options { display: flex; gap: 15px; margin-top: 15px; }
+.gacha-card { flex: 1; background: #4a4a6a; padding: 15px; border-radius: 8px; }
+.gacha-card.limited { border: 2px solid #ecc94b; }
+.gacha-result { margin-top: 15px; padding: 15px; background: #2b2b36; border-radius: 8px; border: 2px solid #48bb78; }
+
+/* レベル・EXPバー */
+.level-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.85em;
+  padding: 2px 10px;
+  border-radius: 20px;
+  margin: 4px 0 6px;
+}
+.exp-bar-wrap {
+  width: 100%;
+  height: 8px;
+  background: #1a1a24;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.exp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #48bb78);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* クラス・生徒管理タブ */
+.manage-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #2b2b36; border: 1px solid #4a5568;
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; gap: 10px;
+}
+.manage-row > div { flex: 1; min-width: 0; }
+.manage-select {
+  width: 100%; font-size: 1em; padding: 8px 10px;
+  border-radius: 8px; border: 2px solid #6366f1;
+  background: #2a2a3a; color: #fff;
+}
+.pw-badge {
+  display: inline-block; background: #1a1a2e; border: 1px solid #4a5568;
+  border-radius: 4px; padding: 2px 8px; font-family: monospace;
+  font-size: 0.85em; letter-spacing: 0.05em; color: #ecc94b;
+}
+.pw-toggle-btn {
+  font-size: 0.72em; padding: 2px 7px; background: #4a4a6a;
+  border: none; border-radius: 4px; color: #fff; cursor: pointer; margin-left: 6px;
+}
+
+/* 掲示板 */
+.bulletin-manage-item {
+  background: #2b2b36;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid #4a5568;
+}
+.bulletin-badge {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: bold;
+}
+.badge-published { background: #276749; color: #9ae6b4; }
+.badge-draft { background: #4a5568; color: #a0aec0; }
+
+.bulletin-student-item {
+  background: #2a2a3a;
+  border-left: 4px solid #ecc94b;
+  padding: 12px 15px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 12px;
+}
